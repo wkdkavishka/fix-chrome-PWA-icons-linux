@@ -23,7 +23,7 @@ const COLORS = {
 
 // Moved here so it's accessible to all functions
 const COMMENT =
-	"# fix-chrome-icons.ts automatic cron job (managed by setup.js)";
+	"# fix-chrome-icons.js automatic cron job (managed by setup.js)";
 
 function ask(question) {
 	return new Promise((resolve) => {

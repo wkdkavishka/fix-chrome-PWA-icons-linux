@@ -1,6 +1,6 @@
 # Fix Chrome PWA Icons Linux
 
-A TypeScript script to help manage icon paths for Chrome Progressive Web Apps (PWAs) on Linux desktop environments.
+A JavaScript script to help manage icon paths for Chrome Progressive Web Apps (PWAs) on Linux desktop environments.
 
 ## Problem
 
@@ -24,7 +24,7 @@ Sometimes Chrome PWAs on Linux don't show their icons properly in the applicatio
 
 ## Requirements
 
-- [Bun](https://bun.sh/) runtime **OR** [Node.js](https://nodejs.org/) (v22+)
+- [Node.js](https://nodejs.org/) (v18+)
 - Linux desktop environment
 - Chrome/Chromium browser with installed PWAs
 
@@ -40,27 +40,28 @@ cd fix-chrome-PWA-icons-linux
 2. Make the script executable:
 
 ```bash
-chmod +x fix-chrome-icons.ts
+chmod +x fix-chrome-icons.js
 ```
+
+## Available Scripts
+
+This repository includes:
+
+- `fix-chrome-icons.js` - Main script for fixing Chrome PWA icons
+- `setup.js` - Interactive cron job setup script
 
 ## Usage
 
-Run with Bun (recommended):
+Run with Node.js:
 
 ```bash
-bun run fix-chrome-icons.ts
-```
-
-Or run with Node.js:
-
-```bash
-node fix-chrome-icons.ts
+node fix-chrome-icons.js
 ```
 
 Or execute directly (if executable):
 
 ```bash
-./fix-chrome-icons.ts
+./fix-chrome-icons.js
 ```
 
 ## How It Works
@@ -71,7 +72,34 @@ Or execute directly (if executable):
 4. **Icon Path Update**: Replaces the `Icon=` line with the correct path to the PNG icon
 5. **Reporting**: Provides a summary of all operations performed
 
-## File Structure
+## Automation
+
+### Cron Job Setup
+
+For automatic icon updates, use the included setup script:
+
+```bash
+node setup.js
+```
+
+This interactive script will:
+
+- Install, update, or remove a cron job
+- Run the script automatically at your chosen interval
+- Support running every 2, 4, 6, or 12 hours
+- Use Node.js for the script
+
+### Manual Cron Setup
+
+Alternatively, manually add to crontab:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add line (runs every 6 hours at :00)
+0 */6 * * * /usr/bin/node "/path/to/fix-chrome-icons.js" > /dev/null 2>&1
+```
 
 The script expects this directory structure:
 

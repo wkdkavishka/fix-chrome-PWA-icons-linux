@@ -1,8 +1,8 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
+const fs = require("node:fs/promises");
+const os = require("node:os");
+const path = require("node:path");
 
 // Color variables for consistent output formatting
 const COLORS = {
@@ -13,12 +13,12 @@ const COLORS = {
 	RED: "\x1b[31m",
 	BLUE: "\x1b[34m",
 	RESET: "\x1b[0m",
-} as const;
+};
 
-async function findFiles(dir: string, pattern: RegExp): Promise<string[]> {
-	const files: string[] = [];
+async function findFiles(dir, pattern) {
+	const files = [];
 
-	async function walk(currentDir: string) {
+	async function walk(currentDir) {
 		const entries = await fs.readdir(currentDir, { withFileTypes: true });
 		for (const entry of entries) {
 			const fullPath = path.join(currentDir, entry.name);

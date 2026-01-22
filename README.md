@@ -1,17 +1,19 @@
 # Fix Chrome PWA Icons Linux
 
-A TypeScript/Bun script to fix missing or broken icons for Chrome Progressive Web Apps (PWAs) on Linux desktop environments.
+A TypeScript script to help manage icon paths for Chrome Progressive Web Apps (PWAs) on Linux desktop environments.
 
 ## Problem
 
-When you install Chrome PWAs on Linux, the desktop entries sometimes have incorrect or missing icon paths, resulting in generic or no icons appearing in your application launcher. This script automatically detects and fixes these icon references.
+Sometimes Chrome PWAs on Linux don't show their icons properly in the application launcher. This might be because the desktop entries point to incorrect icon paths. This script provides a simple way to update all Chrome PWA icon paths at once.
 
 ## What It Does
 
-- Scans `~/.local/share/applications/` for Chrome PWA desktop files (pattern: `chrome-*.desktop`)
+- Finds all Chrome PWA desktop files in `~/.local/share/applications/` (pattern: `chrome-*.desktop`)
 - Creates backups of original desktop files in `~/.local/share/applications/backups/`
-- Updates the `Icon=` line in each desktop file to point to the correct icon path
+- Updates the `Icon=` line in each desktop file to point to the standard icon path
 - Uses the expected icon location: `~/.local/share/icons/hicolor/256x256/apps/`
+
+**<span style="color: red;">Note</span>**: This script simply replaces icon paths in all Chrome app shortcuts - it doesn't detect which ones are actually broken, but makes it easy to update them all at once.
 
 ## Features
 
@@ -22,7 +24,7 @@ When you install Chrome PWAs on Linux, the desktop entries sometimes have incorr
 
 ## Requirements
 
-- [Bun](https://bun.sh/) runtime
+- [Bun](https://bun.sh/) runtime **OR** [Node.js](https://nodejs.org/) (v22+)
 - Linux desktop environment
 - Chrome/Chromium browser with installed PWAs
 
@@ -43,13 +45,19 @@ chmod +x fix-chrome-icons.ts
 
 ## Usage
 
-Run the script:
+Run with Bun (recommended):
 
 ```bash
 bun run fix-chrome-icons.ts
 ```
 
-Or execute directly:
+Or run with Node.js:
+
+```bash
+node fix-chrome-icons.ts
+```
+
+Or execute directly (if executable):
 
 ```bash
 ./fix-chrome-icons.ts

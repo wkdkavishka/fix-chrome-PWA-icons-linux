@@ -158,6 +158,48 @@ async function main() {
 		);
 	}
 
+	// Update KDE icon cache to refresh icon cache
+	console.log(
+		`${COLORS.YELLOW}%s${COLORS.RESET}`,
+		"Updating KDE icon cache...",
+	);
+	try {
+		const { execSync } = require("node:child_process");
+		execSync("update-desktop-database ~/.local/share/applications", {
+			stdio: "inherit",
+		});
+		console.log(
+			`${COLORS.GREEN}%s${COLORS.RESET}`,
+			"✓ KDE icon cache updated successfully",
+		);
+	} catch (_err) {
+		console.log(
+			`${COLORS.RED}%s${COLORS.RESET}`,
+			"✗ Failed to update KDE icon cache",
+		);
+	}
+
+	// Update GTK icon cache
+	console.log(
+		`${COLORS.YELLOW}%s${COLORS.RESET}`,
+		"Updating GTK icon cache...",
+	);
+	try {
+		const { execSync } = require("node:child_process");
+		execSync("gtk-update-icon-cache ~/.local/share/icons/hicolor", {
+			stdio: "inherit",
+		});
+		console.log(
+			`${COLORS.GREEN}%s${COLORS.RESET}`,
+			"✓ GTK icon cache updated successfully",
+		);
+	} catch (_err) {
+		console.log(
+			`${COLORS.RED}%s${COLORS.RESET}`,
+			"✗ Failed to update GTK icon cache",
+		);
+	}
+
 	console.log(`${COLORS.GREEN}%s${COLORS.RESET}`, "Done!");
 }
 

@@ -20,6 +20,7 @@ Sometimes Chrome PWAs on Linux don't show their icons properly in the applicatio
 - **Safe operation**: Creates backups before making any changes
 - **Colored output**: Clear, readable console output with status indicators
 - **Error handling**: Graceful handling of file operations and invalid formats
+- **Cache refresh**: Automatically updates KDE and GTK icon cache
 - **Summary reporting**: Shows processed, updated, and error counts
 
 ## Requirements
@@ -70,7 +71,8 @@ Or execute directly (if executable):
 2. **Validation**: Ensures filenames follow the expected format: `chrome-{app_id}-{profile}.desktop`
 3. **Backup Creation**: Creates a backup of each desktop file before modification
 4. **Icon Path Update**: Replaces the `Icon=` line with the correct path to the PNG icon
-5. **Reporting**: Provides a summary of all operations performed
+5. **Cache Updates**: Refreshes both KDE and GTK icon cache for immediate effect
+6. **Reporting**: Provides a summary of all operations performed
 
 ## Automation
 
@@ -136,6 +138,10 @@ Processed: 2 files
 Updated: 2 files
 Errors: 0
 Backups saved in: /home/user/.local/share/applications/backups
+Updating KDE Icon cache...
+✓ KDE Icon cache updated successfully
+Updating GTK icon cache...
+✓ GTK icon cache updated successfully
 Done!
 ```
 

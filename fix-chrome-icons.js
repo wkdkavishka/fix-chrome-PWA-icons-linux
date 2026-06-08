@@ -41,6 +41,7 @@ async function main() {
 	const APPS_DIR = path.join(home, ".local/share/applications");
 	const ICONS_DIR = path.join(home, ".local/share/icons/hicolor/256x256/apps");
 	const BACKUP_DIR = path.join(home, ".local/share/applications/backups");
+	const HICOLOR_DIR = path.join(home, ".local/share/icons/hicolor");
 
 	// Create backup directory
 	try {
@@ -97,6 +98,29 @@ async function main() {
 		const icon_name = `chrome-${app_id}-${profile}`;
 		const icon_path = path.join(ICONS_DIR, `${icon_name}.png`);
 
+		let content;
+		try {
+			content = await fs.readFile(file, "utf-8");
+		} catch (_err) {
+			console.log(
+				`${COLORS.RED}%s${COLORS.RESET}`,
+				`  ✗ Failed to read file, skipping`,
+			);
+			errors++;
+			continue;
+		}
+
+		const newContent = content.replace(/^Icon=.*$/gm, `Icon=${icon_path}`);
+		if (newContent === content) {
+			console.log(
+				`${COLORS.GREEN}%s${COLORS.RESET}`,
+				`  ✓ Icon path is already correct: ${icon_path}`,
+			);
+			processed++;
+			console.log(""); // Empty line between files
+			continue;
+		}
+
 		const backup_file = path.join(BACKUP_DIR, `${filename}.bak`);
 
 		// Create backup
@@ -120,8 +144,6 @@ async function main() {
 		// Update icon path if backup succeeded
 		if (backupSuccess) {
 			try {
-				const content = await fs.readFile(file, "utf-8");
-				const newContent = content.replace(/^Icon=.*$/gm, `Icon=${icon_path}`);
 				await fs.writeFile(file, newContent);
 				console.log(
 					`${COLORS.GREEN}%s${COLORS.RESET}`,
@@ -165,7 +187,7 @@ async function main() {
 	);
 	try {
 		const { execSync } = require("node:child_process");
-		execSync("update-desktop-database ~/.local/share/applications", {
+		execSync(`update-desktop-database "${APPS_DIR}"`, {
 			stdio: "inherit",
 		});
 		console.log(
@@ -186,7 +208,7 @@ async function main() {
 	);
 	try {
 		const { execSync } = require("node:child_process");
-		execSync("gtk-update-icon-cache ~/.local/share/icons/hicolor", {
+		execSync(`gtk-update-icon-cache "${HICOLOR_DIR}"`, {
 			stdio: "inherit",
 		});
 		console.log(

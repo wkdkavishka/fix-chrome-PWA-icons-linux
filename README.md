@@ -1,35 +1,29 @@
 # Fix Chrome PWA Icons Linux
 
-A JavaScript script to help manage icon paths for Chrome Progressive Web Apps (PWAs) on Linux desktop environments.
+A lightweight JavaScript/TypeScript utility to automate and fix icon paths for Google Chrome Progressive Web Apps (PWAs) on Linux desktop environments (optimized for KDE Plasma and GTK).
 
 ## Problem
 
-Sometimes Chrome PWAs on Linux don't show their icons properly in the application launcher. This might be because the desktop entries point to incorrect icon paths. This script provides a simple way to update all Chrome PWA icon paths at once.
-
-## What It Does
-
-- Finds all Chrome PWA desktop files in `~/.local/share/applications/` (pattern: `chrome-*.desktop`)
-- Creates backups of original desktop files in `~/.local/share/applications/backups/`
-- Updates the `Icon=` line in each desktop file to point to the standard icon path
-- Uses the expected icon location: `~/.local/share/icons/hicolor/256x256/apps/`
-
-**<span style="color: red;">Note</span>**: This script simply replaces icon paths in all Chrome app shortcuts - it doesn't detect which ones are actually broken, but makes it easy to update them all at once.
+Sometimes Chrome PWAs on Linux don't show their icons properly in the application launcher. This happens because Chrome's generated `.desktop` files point to missing or incorrect icon paths. This utility corrects the `Icon=` path of PWA shortcuts to point to their cached PNG images.
 
 ## Features
 
-- **Safe operation**: Creates backups before making any changes
-- **Colored output**: Clear, readable console output with status indicators
-- **Error handling**: Graceful handling of file operations and invalid formats
-- **Cache refresh**: Automatically updates KDE and GTK icon cache
-- **Summary reporting**: Shows processed, updated, and error counts
+- **Safe operation**: Only modifies files if `Icon=` paths need correction. Creates a `.bak` backup first.
+- **Real-Time Automation**: Uses systemd user path units (`.path`) to watch `~/.local/share/applications/` and immediately fix newly installed/updated PWAs.
+- **Scheduled Automation**: Supports cron-based triggers for environments without systemd.
+- **Node & Bun Support**: Runs seamlessly on either Node.js or [Bun](https://bun.sh/) for maximum performance.
+- **Zero Sudo Requirements**: Fully complies with XDG specifications, installing into user-space (`~/.local/share/fix-chrome-icons/`).
+- **Safety Checks**: Validates that KDE Plasma is present before starting, with fallback continuation prompts.
 
-## Requirements
+## Quick Install (One-Line Installer)
 
-- [Node.js](https://nodejs.org/) (v18+)
-- Linux desktop environment
-- Chrome/Chromium browser with installed PWAs
+You can run the interactive setup in a single line. It automatically downloads the latest version, installs it to user-space, detects your preferred runtime (`bun` or `node`), and configures automation:
 
-## Installation
+```bash
+bash -c 'curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/main/setup.js -o /tmp/setup.js && (command -v bun &>/dev/null && bun /tmp/setup.js || node /tmp/setup.js)'
+```
+
+## Manual Installation
 
 1. Clone this repository:
 
@@ -38,70 +32,50 @@ git clone git@github.com:wkdkavishka/fix-chrome-PWA-icons-linux.git
 cd fix-chrome-PWA-icons-linux
 ```
 
-2. Make the script executable:
+2. Run the local setup wizard:
 
+Using Bun (recommended):
 ```bash
-chmod +x fix-chrome-icons.js
+bun setup.js
 ```
 
-## Available Scripts
-
-This repository includes:
-
-- `fix-chrome-icons.js` - Main script for fixing Chrome PWA icons
-- `setup.js` - Interactive cron job setup script
-
-## Usage
-
-Run with Node.js:
-
-```bash
-node fix-chrome-icons.js
-```
-
-Or execute directly (if executable):
-
-```bash
-./fix-chrome-icons.js
-```
-
-## How It Works
-
-1. **File Discovery**: The script searches for desktop files matching the pattern `chrome-*.desktop`
-2. **Validation**: Ensures filenames follow the expected format: `chrome-{app_id}-{profile}.desktop`
-3. **Backup Creation**: Creates a backup of each desktop file before modification
-4. **Icon Path Update**: Replaces the `Icon=` line with the correct path to the PNG icon
-5. **Cache Updates**: Refreshes both KDE and GTK icon cache for immediate effect
-6. **Reporting**: Provides a summary of all operations performed
-
-## Automation
-
-### Cron Job Setup
-
-For automatic icon updates, use the included setup script:
-
+Using Node.js:
 ```bash
 node setup.js
 ```
 
-This interactive script will:
+## How It Works
 
-- Install, update, or remove a cron job
-- Run the script automatically at your chosen interval
-- Support running every 2, 4, 6, or 12 hours
-- Use Node.js for the script
+1. **Detection & Verification**: Confirms a KDE/Plasma session is running (prompts to override if not detected).
+2. **File Discovery**: Reads all desktop entries matching the pattern `chrome-*.desktop` in `~/.local/share/applications/`.
+3. **Change Verification**: Compares the current `Icon=` value with the target standard PWA icon path (`~/.local/share/icons/hicolor/256x256/apps/`).
+4. **Correction & Backup**: If paths do not match, it backs up the file to `~/.local/share/applications/backups/` and updates the shortcut path. If already correct, it skips any write operations to avoid triggering infinite file-watcher loops.
+5. **Cache Refresh**: Runs `update-desktop-database` and `gtk-update-icon-cache` using absolute paths to immediately refresh your launcher's icons.
 
-### Manual Cron Setup
+## Automation Methods
 
-Alternatively, manually add to crontab:
+During the interactive setup, you can configure:
+
+### 1. File Watcher (Recommended for Systemd)
+Uses a systemd user path unit to monitor `~/.local/share/applications/`. It uses native OS notifications (`inotify`) to run the correction script *immediately* when any desktop entry is created or modified.
+- Services installed: `~/.config/systemd/user/fix-chrome-icons.path` and `.service`
+- Controlled via: `systemctl --user status fix-chrome-icons.path`
+
+### 2. Cron Job
+Sets up a traditional cron task using the local crontab to check for and correct icon paths on an interval (every 2, 4, 6, or 12 hours).
+
+### 3. Manual Cron Setup
+If you prefer configuring cron manually:
 
 ```bash
-# Edit crontab
+# Edit your user crontab
 crontab -e
 
-# Add line (runs every 6 hours at :00)
-0 */6 * * * /usr/bin/node "/path/to/fix-chrome-icons.js" > /dev/null 2>&1
+# Add the following entry (runs every 6 hours)
+0 */6 * * * PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "/usr/bin/node" "/home/YOUR_USER/.local/share/fix-chrome-icons/fix-chrome-icons.js" > /dev/null 2>&1
 ```
+*(Replace `/usr/bin/node` with `/home/YOUR_USER/.bun/bin/bun` if using Bun)*
+
 
 The script expects this directory structure:
 

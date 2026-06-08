@@ -20,7 +20,7 @@ Sometimes Chrome PWAs on Linux don't show their icons properly in the applicatio
 You can run the interactive setup in a single line. It automatically downloads the latest version, installs it to user-space, detects your preferred runtime (`bun` or `node`), and configures automation:
 
 ```bash
-bash -c 'curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && (command -v bun &>/dev/null && bun /tmp/setup.js || node /tmp/setup.js)'
+bash -c 'rm -f /tmp/setup.js && if command -v bun &>/dev/null; then curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && bun /tmp/setup.js; elif command -v node &>/dev/null; then curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && node /tmp/setup.js; else echo "Error: Neither Bun nor Node.js was found. Please install one of them first."; exit 1; fi'
 ```
 
 ## Manual Installation

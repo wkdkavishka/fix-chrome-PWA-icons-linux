@@ -436,7 +436,7 @@ async function main() {
 	let selectedRuntime = bunPath ? "bun" : "node";
 	let selectedRuntimePath = bunPath || nodePath;
 	let selectedAutomation = "cron"; // default
-	let cronInterval = 6; // default (hours)
+	let cronInterval = 2; // default (hours)
 
 	if (action === "2") {
 		// Custom Setup flow

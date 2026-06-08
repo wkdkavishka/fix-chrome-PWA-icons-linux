@@ -20,7 +20,7 @@ Sometimes Chrome PWAs on Linux don't show their icons properly in the applicatio
 You can run the interactive setup in a single line. It automatically downloads the latest version, installs it to user-space, detects your preferred runtime (`bun` or `node`), and configures automation:
 
 ```bash
-bash -c 'rm -f /tmp/setup.js && if command -v bun &>/dev/null; then curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && bun /tmp/setup.js; elif command -v node &>/dev/null; then curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && node /tmp/setup.js; else echo "Error: Neither Bun nor Node.js was found. Please install one of them first."; exit 1; fi'
+bash -c 'rm -f /tmp/setup.js && if command -v bun &>/dev/null; then curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && bun /tmp/setup.js; else read -p "Bun is recommended but was not found. Do you want to install Bun now? (y/N): " install_bun; if [ "$install_bun" = "y" ] || [ "$install_bun" = "Y" ]; then curl -fsSL https://bun.sh/install | bash && curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && "$HOME/.bun/bin/bun" /tmp/setup.js; elif command -v node &>/dev/null; then curl -fsSL https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/setup.js -o /tmp/setup.js && node /tmp/setup.js; else echo "Error: Neither Bun nor Node.js was found. Please install one of them first."; exit 1; fi; fi'
 ```
 
 ## Manual Installation

@@ -573,7 +573,7 @@ async function main() {
 			// Download from GitHub
 			console.log(`\nDownloading fix-chrome-icons.js from GitHub raw...`);
 			const rawUrl =
-				"https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/main/fix-chrome-icons.js";
+				"https://raw.githubusercontent.com/wkdkavishka/fix-chrome-PWA-icons-linux/master/fix-chrome-icons.js";
 			await downloadFile(rawUrl, destScriptPath);
 			console.log(
 				`${COLORS.GREEN}✓ Successfully downloaded script to ${destScriptPath}${COLORS.RESET}`,

@@ -15,6 +15,20 @@ const COLORS = {
 	RESET: "\x1b[0m",
 };
 
+// CLI flags
+const args = process.argv.slice(2);
+const IS_QUIET = args.includes('--quiet') || !process.stdout.isTTY;
+
+function log(color, message) {
+	if (IS_QUIET) {
+		const level = color === COLORS.RED ? '[ERROR]' :
+					  color === COLORS.YELLOW ? '[WARN]' : '[INFO]';
+		console.log(`${level} ${message}`);
+	} else {
+		console.log(`${color}%s${COLORS.RESET}`, message);
+	}
+}
+
 async function findFiles(dir, pattern) {
 	const files = [];
 
@@ -54,17 +68,17 @@ async function main() {
 	// Find all Chrome desktop files
 	const fileList = await findFiles(APPS_DIR, /^chrome-.*\.desktop$/);
 
-	console.log(`${COLORS.CYAN}%s${COLORS.RESET}`, "Found File List: ");
+	log(COLORS.CYAN, "Found File List: ");
 	if (fileList.length === 0) {
 		console.log("No Chrome desktop files found");
 		process.exit(0);
 	} else {
 		fileList.forEach((file) => {
-			console.log(`${COLORS.YELLOW}%s${COLORS.RESET}`, file);
+			log(COLORS.YELLOW, file);
 		});
 	}
-	console.log(
-		`${COLORS.CYAN}%s${COLORS.RESET}`,
+	log(
+		COLORS.CYAN,
 		`Found ${fileList.length} Chrome desktop files to process`,
 	);
 
@@ -75,8 +89,8 @@ async function main() {
 
 	// Process each file
 	for (const file of fileList) {
-		console.log(
-			`${COLORS.MAGENTA}%s${COLORS.RESET}`,
+		log(
+			COLORS.MAGENTA,
 			`Processing: ${path.basename(file)}`,
 		);
 
@@ -85,8 +99,8 @@ async function main() {
 
 		// parts should be exactly 3: chrome, app_id, profile
 		if (parts.length !== 3) {
-			console.log(
-				`${COLORS.RED}%s${COLORS.RESET}`,
+			log(
+				COLORS.RED,
 				"  ✗ Invalid filename format, skipping",
 			);
 			errors++;
@@ -102,8 +116,8 @@ async function main() {
 		try {
 			content = await fs.readFile(file, "utf-8");
 		} catch (_err) {
-			console.log(
-				`${COLORS.RED}%s${COLORS.RESET}`,
+			log(
+				COLORS.RED,
 				`  ✗ Failed to read file, skipping`,
 			);
 			errors++;
@@ -112,8 +126,8 @@ async function main() {
 
 		const newContent = content.replace(/^Icon=.*$/gm, `Icon=${icon_path}`);
 		if (newContent === content) {
-			console.log(
-				`${COLORS.GREEN}%s${COLORS.RESET}`,
+			log(
+				COLORS.GREEN,
 				`  ✓ Icon path is already correct: ${icon_path}`,
 			);
 			processed++;
@@ -127,14 +141,14 @@ async function main() {
 		let backupSuccess = false;
 		try {
 			await fs.copyFile(file, backup_file);
-			console.log(
-				`${COLORS.GREEN}%s${COLORS.RESET}`,
+			log(
+				COLORS.GREEN,
 				`  ✓ Backup created: ${path.basename(backup_file)}`,
 			);
 			backupSuccess = true;
 		} catch (_err) {
-			console.log(
-				`${COLORS.RED}%s${COLORS.RESET}`,
+			log(
+				COLORS.RED,
 				`  ✗ Backup failed, skipping file`,
 			);
 			errors++;
@@ -145,14 +159,14 @@ async function main() {
 		if (backupSuccess) {
 			try {
 				await fs.writeFile(file, newContent);
-				console.log(
-					`${COLORS.GREEN}%s${COLORS.RESET}`,
+				log(
+					COLORS.GREEN,
 					`  ✓ Updated icon path to: ${icon_path}`,
 				);
 				updated++;
 			} catch (_err) {
-				console.log(
-					`${COLORS.RED}%s${COLORS.RESET}`,
+				log(
+					COLORS.RED,
 					"  ✗ Failed to update icon path",
 				);
 				errors++;
@@ -165,64 +179,64 @@ async function main() {
 	}
 
 	// Print summary
-	console.log(`${COLORS.BLUE}%s${COLORS.RESET}`, "=== Summary ===");
-	console.log(
-		`${COLORS.GREEN}%s${COLORS.RESET}`,
+	log(COLORS.BLUE, "=== Summary ===");
+	log(
+		COLORS.GREEN,
 		`Processed: ${processed} files`,
 	);
-	console.log(`${COLORS.GREEN}%s${COLORS.RESET}`, `Updated: ${updated} files`);
-	console.log(`${COLORS.RED}%s${COLORS.RESET}`, `Errors: ${errors}`);
+	log(COLORS.GREEN, `Updated: ${updated} files`);
+	log(COLORS.RED, `Errors: ${errors}`);
 
 	if (updated > 0) {
-		console.log(
-			`${COLORS.YELLOW}%s${COLORS.RESET}`,
+		log(
+			COLORS.YELLOW,
 			`Backups saved in: ${BACKUP_DIR}`,
 		);
 	}
 
 	// Update KDE icon cache to refresh icon cache
-	console.log(
-		`${COLORS.YELLOW}%s${COLORS.RESET}`,
+	log(
+		COLORS.YELLOW,
 		"Updating KDE icon cache...",
 	);
 	try {
 		const { execSync } = require("node:child_process");
 		execSync(`update-desktop-database "${APPS_DIR}"`, {
-			stdio: "inherit",
+			stdio: IS_QUIET ? "pipe" : "inherit",
 		});
-		console.log(
-			`${COLORS.GREEN}%s${COLORS.RESET}`,
+		log(
+			COLORS.GREEN,
 			"✓ KDE icon cache updated successfully",
 		);
 	} catch (_err) {
-		console.log(
-			`${COLORS.RED}%s${COLORS.RESET}`,
+		log(
+			COLORS.RED,
 			"✗ Failed to update KDE icon cache",
 		);
 	}
 
 	// Update GTK icon cache
-	console.log(
-		`${COLORS.YELLOW}%s${COLORS.RESET}`,
+	log(
+		COLORS.YELLOW,
 		"Updating GTK icon cache...",
 	);
 	try {
 		const { execSync } = require("node:child_process");
 		execSync(`gtk-update-icon-cache "${HICOLOR_DIR}"`, {
-			stdio: "inherit",
+			stdio: IS_QUIET ? "pipe" : "inherit",
 		});
-		console.log(
-			`${COLORS.GREEN}%s${COLORS.RESET}`,
+		log(
+			COLORS.GREEN,
 			"✓ GTK icon cache updated successfully",
 		);
 	} catch (_err) {
-		console.log(
-			`${COLORS.RED}%s${COLORS.RESET}`,
+		log(
+			COLORS.RED,
 			"✗ Failed to update GTK icon cache",
 		);
 	}
 
-	console.log(`${COLORS.GREEN}%s${COLORS.RESET}`, "Done!");
+	log(COLORS.GREEN, "Done!");
 }
 
 main().catch((err) => {

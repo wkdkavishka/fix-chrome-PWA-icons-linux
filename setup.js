@@ -223,21 +223,25 @@ function setupSystemdWatcher(runtimePath, scriptPath) {
 		"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
 
 	const serviceContent = `[Unit]
-Description=Fix Chrome PWA Icons
+Description=Fix Chrome PWA Icons (triggered by file watcher)
 After=default.target
 
 [Service]
 Type=oneshot
 Environment="PATH=${userPath}"
+ExecStartPre=-/usr/bin/systemctl --user stop fix-chrome-icons.path
 ExecStart="${runtimePath}" "${scriptPath}"
+ExecStopPost=/usr/bin/systemctl --user start fix-chrome-icons.path
 `;
 
 	const appsDir = path.join(home, ".local/share/applications");
 	const pathContent = `[Unit]
-Description=Watch ~/.local/share/applications for Chrome PWA changes
+Description=Watch for Chrome PWA desktop file changes
+Documentation=https://github.com/wkdkavishka/fix-chrome-PWA-icons-linux
 
 [Path]
 PathChanged=${appsDir}
+MakeDirectory=yes
 Unit=fix-chrome-icons.service
 
 [Install]
@@ -253,9 +257,16 @@ WantedBy=paths.target
 	execSync(`${systemctl} start fix-chrome-icons.path`);
 
 	console.log(
-		`${COLORS.GREEN}✓ Systemd File Watcher installed and started successfully!${COLORS.RESET}`,
+		`${COLORS.GREEN}✓ Systemd File Watcher installed and started!${COLORS.RESET}`,
 	);
 	console.log(`  Watching: ${appsDir}`);
+	console.log(`  Watcher pauses during fixes to prevent re-triggers.`);
+
+	// Install safety-net cron job (catches changes missed during watcher-off window)
+	setupCronJob(runtimePath, scriptPath, 6);
+	console.log(
+		`${COLORS.YELLOW}  Safety-net cron job added (every 6 hours) for missed events.${COLORS.RESET}`,
+	);
 }
 
 function removeSystemdWatcher() {
@@ -269,6 +280,9 @@ function removeSystemdWatcher() {
 		try {
 			execSync("systemctl --user stop fix-chrome-icons.path 2>/dev/null");
 			execSync("systemctl --user disable fix-chrome-icons.path 2>/dev/null");
+		} catch {}
+		try {
+			execSync("systemctl --user stop fix-chrome-icons.service 2>/dev/null");
 		} catch {}
 		try {
 			fs.unlinkSync(pathFile);
@@ -360,7 +374,110 @@ async function removeAllSetups(installDir) {
 			);
 		}
 	}
+
+	console.log(
+		`\n${COLORS.YELLOW}Note: Backups preserved at ~/.local/share/applications/backups/${COLORS.RESET}`,
+	);
+	console.log(`Run setup again and choose "Restore from backup" if needed.`);
 	console.log(`\n${COLORS.GREEN}Uninstallation complete!${COLORS.RESET}`);
+}
+
+async function restoreFromBackup() {
+	const home = os.homedir();
+	const backupDir = path.join(home, ".local/share/applications/backups");
+	const appsDir = path.join(home, ".local/share/applications");
+
+	if (!fs.existsSync(backupDir)) {
+		console.log(
+			`${COLORS.RED}No backup directory found at ${backupDir}${COLORS.RESET}`,
+		);
+		console.log("No backups have been created yet. Run the icon fix first.");
+		return;
+	}
+
+	const backups = fs.readdirSync(backupDir)
+		.filter((f) => f.endsWith(".desktop.bak"))
+		.sort();
+
+	if (backups.length === 0) {
+		console.log(
+			`${COLORS.YELLOW}No backup files found in ${backupDir}${COLORS.RESET}`,
+		);
+		return;
+	}
+
+	console.log(`\n${COLORS.CYAN}=== Available Backups ===${COLORS.RESET}`);
+	console.log(`Backup location: ${backupDir}\n`);
+
+	backups.forEach((file, index) => {
+		const originalName = file.replace(".bak", "");
+		const backupPath = path.join(backupDir, file);
+		const stats = fs.statSync(backupPath);
+		const date = stats.mtime.toLocaleString();
+		console.log(
+			`${index + 1}. ${originalName}  ${COLORS.YELLOW}(backed up: ${date})${COLORS.RESET}`,
+		);
+	});
+
+	console.log(`${backups.length + 1}. Restore ALL backups`);
+	console.log(`${backups.length + 2}. Cancel`);
+
+	const choice = await ask(`\nEnter choice (1-${backups.length + 2}): `);
+	const choiceNum = parseInt(choice, 10);
+
+	if (!choiceNum || choiceNum === backups.length + 2) {
+		console.log("Cancelled.");
+		return;
+	}
+
+	const filesToRestore =
+		choiceNum === backups.length + 1 ? backups : [backups[choiceNum - 1]];
+
+	if (!filesToRestore[0]) {
+		console.log(`${COLORS.RED}Invalid choice.${COLORS.RESET}`);
+		return;
+	}
+
+	let restored = 0;
+	let failed = 0;
+
+	for (const backupFile of filesToRestore) {
+		const originalName = backupFile.replace(".bak", "");
+		const backupPath = path.join(backupDir, backupFile);
+		const targetPath = path.join(appsDir, originalName);
+
+		try {
+			fs.copyFileSync(backupPath, targetPath);
+			console.log(
+				`${COLORS.GREEN}✓ Restored: ${originalName}${COLORS.RESET}`,
+			);
+			restored++;
+		} catch (err) {
+			console.log(
+				`${COLORS.RED}✗ Failed to restore ${originalName}: ${err.message}${COLORS.RESET}`,
+			);
+			failed++;
+		}
+	}
+
+	console.log(`\n${COLORS.BLUE}=== Restore Summary ===${COLORS.RESET}`);
+	console.log(`${COLORS.GREEN}Restored: ${restored} files${COLORS.RESET}`);
+	if (failed > 0) {
+		console.log(`${COLORS.RED}Failed: ${failed} files${COLORS.RESET}`);
+	}
+
+	// Refresh caches after restore
+	if (restored > 0) {
+		console.log(
+			`\n${COLORS.YELLOW}Refreshing desktop caches...${COLORS.RESET}`,
+		);
+		try {
+			execSync(`update-desktop-database "${appsDir}" 2>/dev/null`);
+			console.log(
+				`${COLORS.GREEN}✓ Desktop database updated${COLORS.RESET}`,
+			);
+		} catch {}
+	}
 }
 
 async function main() {
@@ -417,11 +534,12 @@ async function main() {
 			"1. Install or update (Default - Bun/Node & Cron)\n" +
 			"2. Custom Install/Update (Choose runtime, directory, file watcher/cron)\n" +
 			"3. Remove/Uninstall all setups\n" +
-			"4. Exit\n" +
-			"Enter choice (1-4): ",
+			"4. Restore from backup\n" +
+			"5. Exit\n" +
+			"Enter choice (1-5): ",
 	);
 
-	if (action === "4") {
+	if (action === "5") {
 		console.log("Goodbye!");
 		rl.close();
 		process.exit(0);
@@ -429,6 +547,12 @@ async function main() {
 
 	if (action === "3") {
 		await removeAllSetups(installDir);
+		rl.close();
+		process.exit(0);
+	}
+
+	if (action === "4") {
+		await restoreFromBackup();
 		rl.close();
 		process.exit(0);
 	}
